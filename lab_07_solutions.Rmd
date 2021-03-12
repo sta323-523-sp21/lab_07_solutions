@@ -1,0 +1,100 @@
+---
+title: "Lab 07"
+author: ""
+date: ""
+output: 
+  html_document:
+    toc: true
+    number_sections: false
+    toc_float: true
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE,
+                      message = FALSE, warning = FALSE, comment = NA,
+                      fig.width = 9, fig.height = 6)
+```
+
+## Introduction
+
+The [Open Movie Database](http://www.omdbapi.com) provides an API to obtain 
+movie information. Users can access information such as the plot, year, genre, 
+runtime, etc. about a specific movie. Movies can be queried with a valid IMDb 
+ID or title.
+
+To get started, create a free account to get an API key at 
+http://www.omdbapi.com/apikey.aspx. You'll be able to make 1,000 requests
+per day.
+
+## Packages
+
+```{r}
+library(tidyverse)
+library(jsonlite)
+library(rvest)
+```
+
+## The Shawshank Redemption
+
+According to IMDB (https://www.imdb.com/chart/top/), the top ranked movie is
+The Shawshank Redemption. Use the OMDb API to query the full plot for this
+movie. Don't forget to include your API key in the query string.
+
+```{r}
+base_url <- "http://www.omdbapi.com/?apikey=8ee9ba8e&"
+```
+
+```{r}
+query <- "t=The+Shawshank+Redemption&plot=full"
+
+call <- str_c(base_url, query)
+read_json(call)$Plot
+```
+
+Redo your above query, but this time return the data in XML format. You'll need 
+to use `rvest` functions to extract the plot. Before you try an parse it,
+view the result in your browser by pasting in the URL.
+
+```{r}
+call <- str_c(base_url, query, "&r=xml")
+
+read_html(call) %>% 
+  html_nodes(css = "movie") %>% 
+  html_attr(name = "plot")
+```
+
+## Movie search
+
+Perform a search for movies that contain "saw" in the title. How many total
+results exist? Coerce those results to a data frame.
+
+```{r}
+call <- str_c(base_url, "s=saw")
+total_results <- as.numeric(read_json(call)$totalResults)
+total_results
+```
+
+```{r}
+search_movies <- function(term, page) {
+  call <- str_c(base_url, "&s=", term, "&page=", page)
+  fromJSON(call)$Search %>% 
+    as_tibble()
+}
+```
+
+```{r}
+saw_movies <- map_df(seq(ceiling(total_results / 10)), 
+                     search_movies, term = "saw")
+
+saw_movies
+```
+
+## API wrapper
+
+Create an R function that will allow users to easily query movies using the 
+API by ID or title. Allow the user to use the API parameters `i`, `t`, `plot`,
+`r`, and `apikey`. However, you should provide more meaningful names for these
+and put checks in place to handle bad values. For example, according to the
+API documentation: both "i" and "t" are optional at least one argument is 
+required. Your R function should account for this requirement.
