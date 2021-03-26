@@ -98,3 +98,52 @@ API by ID or title. Allow the user to use the API parameters `i`, `t`, `plot`,
 and put checks in place to handle bad values. For example, according to the
 API documentation: both "i" and "t" are optional at least one argument is 
 required. Your R function should account for this requirement.
+
+```{r}
+get_movies <- function(api_key, id = NULL, term = NULL, 
+                       plot = "short", data = "xml") {
+  
+  if (is.null(id) && is.null(term)) {
+    stop("at least one of id or term is required!")
+  }
+  
+  if (!(plot %in% c("short", "full"))) {
+    stop("plot must be one of 'short' or 'full'")
+  }
+  
+  if (!(data %in% c("json", "xml"))) {
+    stop("data must be one of 'json' or 'xml'")
+  }
+  
+  base_url <- paste0("http://www.omdbapi.com/?apikey=", api_key, "&")
+  
+  if (data == "json") {
+    query <- paste0("t=", term, "&", "plot=", plot, "&r=json")
+    call <- paste0(base_url, query)
+    
+    return(read_json(call))
+  }
+  
+  query <- paste0("t=", term, "&", "plot=", plot, "&r=xml")
+  call <- str_c(base_url, query)
+
+  read_html(call)
+}
+```
+
+```{r}
+get_movies(api_key = "8ee9ba8e", plot = "full", data = "json")
+
+get_movies(api_key = "8ee9ba8e", plot = "full", 
+           term = "The+Shawshank+Redemption", data = "xml")
+
+get_movies(api_key = "8ee9ba8e", plot = "full", 
+           term = "The+Shawshank+Redemption", data = "json")
+
+get_movies(api_key = "8ee9ba8e", plot = "total", 
+           term = "The+Shawshank+Redemption", data = "json")
+
+get_movies(api_key = "8ee9ba8e", plot = "short", 
+           term = "The+Shawshank+Redemption", data = "csv")
+```
+
